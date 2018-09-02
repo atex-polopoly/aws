@@ -1,5 +1,5 @@
 source 'https://supermarket.chef.io'
 
-cookbook 'wait-for, git: git@github.com:atex-polopoly/wait-for'
+cookbook 'wait_for, git: git@github.com:atex-polopoly/wait_for'
 
 metadata
