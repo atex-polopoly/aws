@@ -95,3 +95,25 @@ def instance_id
   @_instance_id = Net::HTTP.get(URI.parse('http://169.254.169.254/latest/meta-data/instance-id')) if @_instance_id.nil?
   @_instance_id
 end
+
+def scale_in_protect_others(asg)
+  client = _get_autoscaling_client
+  asgs = client.describe_auto_scaling_groups({
+    auto_scaling_group_names: [
+      asg,
+    ],
+  }).auto_scaling_groups
+
+  raise "#{instance_id} belongs in #{asgs.length} auto scaling groups, expected 1!" if asgs.length != 1
+
+  others = asgs[0].instances.select{ |instance| instance.instance_id != instance_id }
+  set_instance_protection asg, true, others
+end
+
+def set_instance_protection(asg, protected_from_scale_in, *instances)
+  client.set_instance_protection({
+    auto_scaling_group_name: asg,
+    instance_ids: instances,
+    protected_from_scale_in: protected_from_scale_in,
+  })
+end

@@ -13,14 +13,14 @@ action :run do
 
   asg_name = get_autoscaling_group_name instance_id
   desired = get_desired_capacity asg_name
+  new_desired = desired + 1
 
-  scale_up = ruby_block "increase capacity to #{desired + 1}" do
+  scale_up = ruby_block "increase capacity to #{new_desired}" do
     block do
-      set_desired_capacity asg_name desired + 1
+      set_desired_capacity asg_name new_desired
       id = get_new_instance_id asg_name
       node.default['aws']['created_instance_id'] = id
     end
-    only_if { above_capacity }
   end
 
   wait_for 'initialization of new server' do
