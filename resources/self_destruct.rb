@@ -9,7 +9,7 @@ resource_name :self_destruct
 
 action :run do
 
-  require 'aws-sdk'
+  # require 'aws-sdk'#TODO fix import
 
   Aws.config[:region] = aws_region
 
