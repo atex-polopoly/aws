@@ -1,7 +1,7 @@
 # The maximum time to wait for the initializition of the new server
 property :max_wait_time, [Float, Integer], default: 900
 
-# resource_name :scale_up
+resource_name :scale_up
 
 # Spins up a new AWS ec2-instance in the same autoscaling group as this server is
 # located in.
