@@ -17,7 +17,7 @@ action :run do
 
   scale_up = ruby_block "increase capacity to #{new_desired}" do
     block do
-      set_desired_capacity asg_name new_desired
+      set_desired_capacity asg_name, new_desired
       id = get_new_instance_id asg_name
       node.default['aws']['created_instance_id'] = id
     end
@@ -25,11 +25,12 @@ action :run do
 
   wait_for 'initialization of new server' do
     block lambda {
-      instances = get_target_group_health
-      return false if instances.empty?
-      instances.each do |instance|
-        next if instance['target']['id'] != node['deploy']['created_instance_id']
-        return instance['aws']['state'] == 'healthy'
+      targets = get_target_group_health
+      return false if targets.empty?
+      targets.each do |instance|
+        next if instance.target.id != node['aws']['created_instance_id']
+        puts "#{instance.target.id} #{instance.target_health.state}"
+        return instance.target_health.state == 'healthy'
       end
       false
     }

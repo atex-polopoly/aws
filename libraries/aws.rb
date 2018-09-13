@@ -41,9 +41,10 @@ def get_new_instance_id(asg_name)
     activities = hash['activities']
     return nil if activities.empty?
     message = activities[0]['description']
+    return nil unless message.include? 'Launching' #BRITTLE: Remove dependency on parsing their description
     vals = message.split ':'
     return nil if vals.length != 2
-    vals[1].chomp
+    vals[1].strip
   }
   instance_id = _wait_for(get_instance_id) do
     client.describe_scaling_activities({
@@ -59,7 +60,7 @@ def _wait_for(get_value_lambda, null_value = nil, max_iter = 30, base_sleep = 1)
     loop do
       return null_value if iteration == max_iter
 
-      puts "Iteration: #{i}"
+      puts "Iteration: #{iteration}"
 
       result = yield
       value = get_value_lambda.call(result)
