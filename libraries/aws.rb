@@ -34,22 +34,30 @@ def set_desired_capacity(asg_name, desired_capacity)
   })
 end
 
-def get_new_instance_id(asg_name)
+def get_asg_instances(asg_name)
+  client = _get_autoscaling_client
+  asgs = client.describe_auto_scaling_groups({
+    auto_scaling_group_names: [
+      asg_name,
+    ],
+  }).auto_scaling_groups
+
+  raise "#{instance_id} belongs in #{asgs.length} auto scaling groups, expected 1!" if asgs.length != 1
+
+  asgs[0].instances.map { |instance| instance.instance_id }
+end
+
+def get_new_instance_id(asg_name, existing_ids)
   client = _get_autoscaling_client
 
-  get_instance_id = lambda { |hash|
-    activities = hash['activities']
-    return nil if activities.empty?
-    message = activities[0]['description']
-    return nil unless message.include? 'Launching' #BRITTLE: Remove dependency on parsing their description
-    vals = message.split ':'
-    return nil if vals.length != 2
-    vals[1].strip
+  get_instance_id = lambda { |ids|
+    return nil if ids.empty?
+    new_id = ids - existing_ids
+    return nil if new_id.empty?
+    new_id[0]
   }
   instance_id = _wait_for(get_instance_id) do
-    client.describe_scaling_activities({
-      auto_scaling_group_name: asg_name,
-    })
+    get_asg_instances asg_name
   end
   puts "Get instance id #{instance_id}"
   instance_id
@@ -98,16 +106,8 @@ def instance_id
 end
 
 def scale_in_protect_others(asg)
-  client = _get_autoscaling_client
-  asgs = client.describe_auto_scaling_groups({
-    auto_scaling_group_names: [
-      asg,
-    ],
-  }).auto_scaling_groups
-
-  raise "#{instance_id} belongs in #{asgs.length} auto scaling groups, expected 1!" if asgs.length != 1
-
-  others = asgs[0].instances.select{ |instance| instance.instance_id != instance_id }
+  instance_ids = get_asg_instances
+  others = instance_ids.select{ |id| id != instance_id }
   set_instance_protection asg, true, others
 end
 

@@ -17,8 +17,9 @@ action :run do
 
   scale_up = ruby_block "increase capacity to #{new_desired}" do
     block do
+      current_ids = get_asg_instances asg_name
       set_desired_capacity asg_name, new_desired
-      id = get_new_instance_id asg_name
+      id = get_new_instance_id asg_name, current_ids
       node.default['aws']['created_instance_id'] = id
     end
   end
